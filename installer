@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "$GREEN
+    ─────────────────────────────────────
+    ─────────────────────────────────────
+    ──█▀─█▀█─█▄█─█▀▀─█░█─█▀▀─▀█▀─▀█▀─█───
+    ──▄█─█▀▀─░█░─█▄█─█▀█─██▄─░█░─░█░─█───
+    ──────────A─Spy─In─Every─Strand──────
+    ─────────────────────────────────────
+$NC"
+
+#add execute permission to files
+FILES=( "./Tools/zipalign" "./Tools/zipalign-m" "./main")
+
+for FILE in  "${FILES[@]}";do
+    if chmod +x "${FILE}" > /dev/null 2>&1;then
+        echo -e "${GREEN}[+]Added Executable Permission to ${FILE}$NC"
+    else
+        echo -e "${RED}[x]Failed to Add Execute Permission to ${FILE}$NC"
+    fi
+done
+
+#check jq is installed
+if command -v jq >/dev/null 2>&1; then
+    echo -e "${GREEN}[+]Package jq is installed$NC"
+else
+    echo -e "${RED}[X]Package jq is not installed$NC"
+    echo -e "${GREEN}[+] Installing jq$NC"
+    apt install jq
+fi
+
+echo -e "${GREEN}FINISHED!! now run main.sh$NC"
+
+

