@@ -7,4 +7,11 @@
 
 **Simple Tool for generating Android RAT that can be controlled via Telegram**
 
+**Installation**
+-----------------
+*chmod +x ./installer*
+./installer
 
+**Run**
+-------
+*./main*
