@@ -82,8 +82,8 @@ fi
 
 #modifying content in smali
 file_content=$(<./Decompiled/smali/com/example/test1/Foreground.smali)
-file_content_modified="${file_content/TOKEN/$token}"
-file_content_modified="${file_content_modified/CHATID/$lastChatid}"
+file_content_modified="${file_content/TOKEN/$TOKEN}"
+file_content_modified="${file_content_modified/CHATID/$LAST_CHAT_ID}"
 echo "$file_content_modified" > ./Decompiled/smali/com/example/test1/Foreground.smali
 echo -e "${GREEN}[+]Modified Smali Value $NC"
 
