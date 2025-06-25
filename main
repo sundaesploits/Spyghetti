@@ -34,9 +34,35 @@ echo -e "Author : ${GREEN}sundaesploits${NC}"
 echo -e "verbose : ${GREEN}$verbose${NC}"
 echo -e "${GREEN}───────────────────────────────────────${NC}"
 
-#collect bot token
-echo -e "${GREEN}Enter telegram Bot Token : $NC"
-read TOKEN
+
+#collect telegram bot token
+echo -e "${GREEN}Enter telegram Bot Token :${NC}"
+TOKEN=""
+stty -echo
+
+while IFS= read -r -s -n 1 char; do
+    # If Enter is pressed, break
+    if [[ $char == $'\0' || $char == $'\n' ]]; then
+        break
+    fi
+
+    # Handle Backspace
+    if [[ $char == $'\177' ]]; then
+        if [ -n "$TOKEN" ]; then
+            TOKEN="${TOKEN%?}"
+            printf '\b \b'
+        fi
+    else
+        TOKEN+="$char"
+        printf '*'
+    fi
+done
+
+# Re-enable terminal echo
+stty echo
+
+# Move to new line
+echo
 
 #verify bot
 BOT_USERNAME=$(curl -s "https://api.telegram.org/bot$TOKEN/getMe"|jq '.result.username')
