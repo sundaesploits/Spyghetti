@@ -9,16 +9,15 @@
 
 **Installation**
 -----------------
-*chmod +x ./installer*
-./installer
-
+*chmod +x ./installer*<br />
+./installer<br />
 
 **Create A Bot Token (If you dont have token)**
 ----------------------
-*Go to Telegram*
-*Search "BotFather"* (Go with Verified Symbol)
-*enter /newbot* (Create New Bot)
-*copy the token*
+*Go to Telegram*<br />
+*Search "BotFather"* (Go with Verified Symbol)<br />
+*enter /newbot* (Create New Bot)<br />
+*copy the token*<br />
 
 **Start**
 ---------
