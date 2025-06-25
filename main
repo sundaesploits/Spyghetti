@@ -35,7 +35,7 @@ echo -e "verbose : ${GREEN}$verbose${NC}"
 echo -e "${GREEN}───────────────────────────────────────${NC}"
 
 
-#collect telegram bot token
+#collect telegram bot token (show password as * symbol)
 echo -e "${GREEN}Enter telegram Bot Token :${NC}"
 TOKEN=""
 stty -echo
