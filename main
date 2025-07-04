@@ -227,8 +227,4 @@ java -jar ./Tools/apksigner.jar verify myApp-final.apk && echo -e "${YELLOW}✔ 
 dir=$(pwd)/myApp-final.apk
 echo -e "${YELLOW}Generated App Located at : $dir $NC"
 
-echo -ne "${GREEN}"
 
-if [[ "$hostapp" == "Apple" || "$hostapp" == "Orange" ]]; then
-    echo "You chose Apple or Orange!"
-fi
