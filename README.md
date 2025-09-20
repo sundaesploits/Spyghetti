@@ -13,6 +13,7 @@
 ./installer<br />
 
 (new)
+-----
 ./main -i
 
 **Create A Bot Token (If you dont have token)**
